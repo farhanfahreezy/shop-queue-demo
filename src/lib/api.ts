@@ -48,7 +48,8 @@ export async function createQueue(
     body: JSON.stringify(data),
   });
   if (!response.ok) {
-    throw new Error("Failed to create queue entry");
+    const errorData = await response.json();
+    throw new Error(errorData.error || "Failed to create queue entry");
   }
   return response.json();
 }
@@ -81,7 +82,8 @@ export async function updateQueueStatus(
     body: JSON.stringify(data),
   });
   if (!response.ok) {
-    throw new Error("Failed to update queue status");
+    const errorData = await response.json();
+    throw new Error(errorData.error || "Failed to update queue status");
   }
   return response.json();
 }

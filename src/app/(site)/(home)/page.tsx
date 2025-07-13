@@ -12,14 +12,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Users, Loader2 } from "lucide-react";
+import { Users, Loader2, Download } from "lucide-react";
 import { usePolling } from "@/hooks/use-polling";
 import { getCustomerStatus, createQueue } from "@/lib/api";
+import { generateQueueTicketPDF } from "@/lib/pdf-generator";
 
 export default function CustomerPage() {
   const [customerName, setCustomerName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
+  const [lastCreatedQueue, setLastCreatedQueue] = useState<any>(null);
 
   // Poll customer status every 2 seconds
   const {
@@ -34,18 +36,40 @@ export default function CustomerPage() {
 
     setIsSubmitting(true);
     setSubmitMessage(null);
+    setLastCreatedQueue(null);
 
     try {
       const newQueue = await createQueue({ name: customerName.trim() });
+
+      // Generate and download PDF automatically
+      generateQueueTicketPDF({
+        name: newQueue.name,
+        queueNumber: newQueue.number,
+        date: newQueue.date,
+        shopName: "Shoppotastic",
+      });
+
+      setLastCreatedQueue(newQueue);
       setCustomerName("");
       setSubmitMessage(
-        `Welcome ${newQueue.name}! You are queue number ${newQueue.number}.`
+        `Welcome ${newQueue.name}! You are queue number ${newQueue.number}. Your ticket has been downloaded.`
       );
     } catch (error) {
       setSubmitMessage("Failed to join queue. Please try again.");
       console.error("Error creating queue:", error);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDownloadAgain = () => {
+    if (lastCreatedQueue) {
+      generateQueueTicketPDF({
+        name: lastCreatedQueue.name,
+        queueNumber: lastCreatedQueue.number,
+        date: lastCreatedQueue.date,
+        shopName: "Shoppotastic",
+      });
     }
   };
 
@@ -101,7 +125,9 @@ export default function CustomerPage() {
         <Card>
           <CardHeader>
             <CardTitle>Join the Queue</CardTitle>
-            <CardDescription>Enter your name to get in line</CardDescription>
+            <CardDescription>
+              Enter your name to get in line and receive your ticket
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleEnterQueue} className="space-y-4">
@@ -129,7 +155,7 @@ export default function CustomerPage() {
                     Adding to Queue...
                   </>
                 ) : (
-                  "Enter Queue"
+                  "Enter Queue & Get Ticket"
                 )}
               </Button>
             </form>
@@ -144,8 +170,37 @@ export default function CustomerPage() {
                 }`}
               >
                 {submitMessage}
+
+                {/* Download Again Button */}
+                {lastCreatedQueue && !submitMessage.includes("Failed") && (
+                  <div className="mt-3">
+                    <Button
+                      onClick={handleDownloadAgain}
+                      variant="outline"
+                      size="sm"
+                      className="w-full bg-transparent"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download Ticket Again
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* PDF Info */}
+        <Card className="mt-4">
+          <CardContent className="p-4">
+            <div className="text-center text-sm text-gray-600">
+              <Download className="h-5 w-5 mx-auto mb-2 text-blue-600" />
+              <p className="font-medium mb-1">Automatic Ticket Download</p>
+              <p>
+                Your queue ticket will be automatically downloaded as a PDF when
+                you join the queue.
+              </p>
+            </div>
           </CardContent>
         </Card>
 
