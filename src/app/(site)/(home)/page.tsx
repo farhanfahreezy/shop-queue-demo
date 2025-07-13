@@ -75,7 +75,7 @@ export default function CustomerPage() {
 
   if (loading && !customerStatus) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="flex items-center space-x-2">
           <Loader2 className="h-6 w-6 animate-spin" />
           <span>Loading...</span>
@@ -86,7 +86,7 @@ export default function CustomerPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-600 mb-4">Error loading queue status</p>
           <p className="text-sm text-gray-600">{error}</p>
@@ -96,7 +96,7 @@ export default function CustomerPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+    <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-md mx-auto pt-8">
         <div className="text-center mb-8">
           <p className="text-gray-600 text-lg">Queue Management System</p>
