@@ -1,0 +1,25 @@
+datasource db {
+    provider = "mongodb"
+    url      = env("DATABASE_URL")
+}
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+model Queue {
+    id     String       @id @default(uuid()) @map("_id")
+    number Int
+    date   DateTime
+    name   String
+    status QUEUE_STATUS @default(Queuing)
+
+    @@index([date, number], name: "store_date_number_index") // for fast lookup and uniqueness
+    @@map("queues")
+}
+
+enum QUEUE_STATUS {
+    Queuing
+    Processed
+    Finished
+}
