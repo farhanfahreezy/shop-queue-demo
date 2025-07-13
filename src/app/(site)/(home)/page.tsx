@@ -1,7 +1,6 @@
 "use client";
 
 import type React from "react";
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,35 +12,68 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Clock, Users } from "lucide-react";
-
-// Dummy data for current queue
-const currentQueueNumber = 15;
-const estimatedWaitTime = "12 minutes";
-const totalInQueue = 8;
+import { Users, Loader2 } from "lucide-react";
+import { usePolling } from "@/hooks/use-polling";
+import { getCustomerStatus, createQueue } from "@/lib/api";
 
 export default function CustomerPage() {
   const [customerName, setCustomerName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState<string | null>(null);
+
+  // Poll customer status every 2 seconds
+  const {
+    data: customerStatus,
+    loading,
+    error,
+  } = usePolling(getCustomerStatus, 2000);
 
   const handleEnterQueue = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customerName.trim()) return;
 
     setIsSubmitting(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    setSubmitMessage(null);
 
-    // Reset form and show success (in real app, this would redirect or show confirmation)
-    setCustomerName("");
-    setIsSubmitting(false);
-    alert(`Welcome ${customerName}! You've been added to the queue.`);
+    try {
+      const newQueue = await createQueue({ name: customerName.trim() });
+      setCustomerName("");
+      setSubmitMessage(
+        `Welcome ${newQueue.name}! You are queue number ${newQueue.number}.`
+      );
+    } catch (error) {
+      setSubmitMessage("Failed to join queue. Please try again.");
+      console.error("Error creating queue:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
+  if (loading && !customerStatus) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">Error loading queue status</p>
+          <p className="text-sm text-gray-600">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <div className="max-w-md mx-auto pt-8">
-        {/* Remove the header section since it's now in navigation */}
         <div className="text-center mb-8">
           <p className="text-gray-600 text-lg">Queue Management System</p>
         </div>
@@ -54,16 +86,12 @@ export default function CustomerPage() {
           </CardHeader>
           <CardContent className="text-center">
             <div className="text-6xl font-bold text-blue-600 mb-4">
-              {currentQueueNumber}
+              {customerStatus?.currentNumber || 0}
             </div>
-            <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
-              <div className="flex items-center justify-center gap-2">
-                <Clock className="h-4 w-4" />
-                <span>Est. wait: {estimatedWaitTime}</span>
-              </div>
+            <div className="grid grid-cols-1 gap-4 text-sm text-gray-600">
               <div className="flex items-center justify-center gap-2">
                 <Users className="h-4 w-4" />
-                <span>{totalInQueue} in queue</span>
+                <span>{customerStatus?.queueCount || 0} people in queue</span>
               </div>
             </div>
           </CardContent>
@@ -86,6 +114,7 @@ export default function CustomerPage() {
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
                   required
+                  disabled={isSubmitting}
                 />
               </div>
               <Button
@@ -94,9 +123,29 @@ export default function CustomerPage() {
                 size="lg"
                 disabled={isSubmitting || !customerName.trim()}
               >
-                {isSubmitting ? "Adding to Queue..." : "Enter Queue"}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Adding to Queue...
+                  </>
+                ) : (
+                  "Enter Queue"
+                )}
               </Button>
             </form>
+
+            {/* Success/Error Message */}
+            {submitMessage && (
+              <div
+                className={`mt-4 p-3 rounded-md text-sm ${
+                  submitMessage.includes("Failed")
+                    ? "bg-red-50 text-red-700 border border-red-200"
+                    : "bg-green-50 text-green-700 border border-green-200"
+                }`}
+              >
+                {submitMessage}
+              </div>
+            )}
           </CardContent>
         </Card>
 
